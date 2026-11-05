@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#117a4b">
+<meta name="description" content="AG KARYANA Hitung Belanja - hitung total belanja, uang masuk, dan kembalian secara otomatis.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>AG KARYANA Hitung Belanja</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;color:#17212b;background:#f1f5f3}
+*{box-sizing:border-box}body{margin:0;padding:12px;max-width:760px;margin-inline:auto}
+header{background:linear-gradient(135deg,#117a4b,#075e3a);color:#fff;padding:18px;border-radius:18px;margin-bottom:12px;display:flex;align-items:center;gap:13px}
+.logo{width:60px;height:60px;flex:none}h1{font-size:21px;line-height:1.15;margin:0 0 5px}header p{margin:0;opacity:.93;font-size:13px}
+.card{background:#fff;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 10px #173b2910}
+h2{font-size:17px;margin:0 0 9px}.hint{font-size:12px;color:#60716a;line-height:1.5;margin:6px 0 10px}
+label{display:block;font-weight:700;font-size:13px;margin:10px 0 6px}
+input,textarea,button{font:inherit}input,textarea{width:100%;padding:12px;border:1px solid #cbd8d1;border-radius:10px;background:#fff;min-width:0}
+textarea{min-height:100px;resize:vertical}
+button{border:0;border-radius:10px;padding:12px 13px;font-weight:750;cursor:pointer}
+.primary{background:#117a4b;color:#fff;width:100%;margin-top:10px}.secondary{background:#e5f4eb;color:#145b3d}.danger{background:#ffebe9;color:#a52620}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.item{border:1px solid #e1e9e4;border-radius:11px;padding:11px;margin-top:8px}
+.itemtop{display:flex;justify-content:space-between;gap:8px;font-weight:750;align-items:start}.item small{display:block;color:#5d6e65;margin-top:5px;line-height:1.5}
+.itemactions{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}.itemactions button{padding:8px 10px;font-size:12px}
+.total{background:#e8f7ee;border:1px solid #c8e8d4;border-radius:13px;padding:14px;margin-top:12px}
+.totalrow{display:flex;justify-content:space-between;gap:12px;margin:7px 0;align-items:center}.grand{font-size:26px;font-weight:850;color:#10643c}
+.money{background:#f7faf8;border:1px solid #dbe8df;border-radius:13px;padding:14px;margin-top:12px}
+.change{background:#117a4b;color:#fff;border-radius:13px;padding:15px;margin-top:12px}.change .value{font-size:29px;font-weight:850;display:block;margin-top:4px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.status{font-size:12px;color:#4e6659;white-space:pre-wrap;line-height:1.5}
+@media(max-width:390px){body{padding:8px}.grid{grid-template-columns:1fr}.grand{font-size:23px}}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="icon.svg" alt="Logo AG KARYANA">
+  <div><h1>AG KARYANA<br>HITUNG BELANJA</h1><p>Hitung total, uang masuk, dan kembalian otomatis.</p></div>
+</header>
+
+<section class="card">
+<h2>1. Input daftar barang</h2>
+<p class="hint">Satu barang per baris. Contoh: <b>katul 25</b> atau <b>pakan kutut botol 5</b>. Barang baru bisa diberi harga di bagian daftar harga.</p>
+<label for="bulk">Daftar barang dan jumlah</label>
+<textarea id="bulk" placeholder="katul 25&#10;pakan kutut botol 5&#10;ina 5&#10;pitaci 5&#10;obat tikus 5&#10;milet 2"></textarea>
+<button class="primary" id="process">Proses daftar barang</button>
+</section>
+
+<section class="card">
+<h2>2. Daftar harga barang</h2>
+<p class="hint">Harga contoh awal bisa diubah. Harga disimpan di browser pada perangkat ini.</p>
+<div class="grid">
+<div><label for="product">Nama barang</label><input id="product" placeholder="Contoh: katul"></div>
+<div><label for="price">Harga satuan (Rp)</label><input id="price" type="number" min="0" step="1" inputmode="numeric" placeholder="3500"></div>
+</div>
+<button class="secondary" id="savePrice" style="margin-top:10px;width:100%">Simpan / perbarui harga</button>
+<div id="priceList"></div>
+</section>
+
+<section class="card">
+<h2>3. Rincian belanja</h2>
+<div id="items"><p class="hint">Belum ada barang. Masukkan daftar barang di atas.</p></div>
+<div class="total">
+<div class="totalrow"><span>Jumlah jenis barang</span><b id="kindCount">0</b></div>
+<div class="totalrow"><span>Total kuantitas</span><b id="qtyCount">0</b></div>
+<div class="totalrow"><span>Total belanja</span><span class="grand" id="grand">Rp0</span></div>
+</div>
+
+<div class="money">
+<h2>4. Pembayaran</h2>
+<label for="cash">Uang masuk / uang dari pelanggan (Rp)</label>
+<input id="cash" type="number" min="0" step="1" inputmode="numeric" placeholder="Masukkan uang yang diterima">
+<div class="totalrow"><span>Total belanja</span><b id="payTotal">Rp0</b></div>
+<div class="totalrow"><span>Uang masuk</span><b id="cashShown">Rp0</b></div>
+<div class="change"><span id="changeLabel">Uang kembalian</span><span class="value" id="change">Rp0</span><span id="payNote" class="hint" style="color:#e8fff0">Masukkan uang masuk untuk menghitung kembalian.</span></div>
+</div>
+
+<div class="actions">
+<button class="secondary" id="copy">Salin nota WhatsApp</button>
+<button class="secondary" id="saveTxn">Simpan transaksi</button>
+<button class="secondary" id="historyBtn">Riwayat transaksi</button>
+<button class="danger" id="clear">Transaksi baru</button>
+</div>
+<p id="status" class="status" aria-live="polite"></p>
+</section>
+
+<section class="card" id="historyCard" hidden><h2>Riwayat transaksi</h2><div id="history"></div></section>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');
+const norm=s=>s.trim().toLocaleLowerCase('id-ID').replace(/\s+/g,' ');
+const defaults={'katul':3500,'pakan kutut botol':10000,'ina':11000,'pitaci':10000,'obat tikus':2500,'milet':15000,'vit b':12500,'vitamin b':12500};
+let prices={...defaults,...JSON.parse(localStorage.getItem('agkb_prices')||'{}')};
+let items=[];
+let history=JSON.parse(localStorage.getItem('agkb_history')||'[]');
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function status(s){$('status').textContent=s}
+function total(){return items.reduce((s,it)=>s+it.qty*it.price,0)}
+function renderPrices(){
+ const entries=Object.entries(prices).sort((a,b)=>a[0].localeCompare(b[0]));
+ $('priceList').innerHTML=entries.length?'<p class="hint"><b>Harga tersimpan</b></p>'+entries.map(([n,p])=>`<div class="item"><div class="itemtop"><span>${esc(n)}</span><span>${fmt(p)}</span></div><div class="itemactions"><button class="secondary" data-editprice="${esc(n)}">Edit</button><button class="danger" data-delprice="${esc(n)}">Hapus</button></div></div>`).join(''):'<p class="hint">Belum ada daftar harga.</p>';
+ $('priceList').querySelectorAll('[data-editprice]').forEach(b=>b.onclick=()=>{$('product').value=b.dataset.editprice;$('price').value=prices[b.dataset.editprice]});
+ $('priceList').querySelectorAll('[data-delprice]').forEach(b=>b.onclick=()=>{delete prices[b.dataset.delprice];localStorage.setItem('agkb_prices',JSON.stringify(prices));renderPrices();status('Harga dihapus.')});
+}
+function renderItems(){
+ $('items').innerHTML=items.length?items.map((it,i)=>`<div class="item"><div class="itemtop"><span>${i+1}. ${esc(it.name)}</span><span>${fmt(it.qty*it.price)}</span></div><small>Jumlah ${it.qty} × ${fmt(it.price)} per unit${it.needsPrice?' · HARGA BELUM DIATUR':''}</small><div class="itemactions"><button class="secondary" data-edititem="${i}">Edit jumlah/harga</button><button class="danger" data-remove="${i}">Hapus</button></div></div>`).join(''):'<p class="hint">Belum ada barang. Masukkan daftar barang di atas.</p>';
+ $('kindCount').textContent=items.length;
+ $('qtyCount').textContent=items.reduce((s,it)=>s+it.qty,0);
+ $('grand').textContent=fmt(total());
+ $('items').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{items.splice(+b.dataset.remove,1);renderItems()});
+ $('items').querySelectorAll('[data-edititem]').forEach(b=>b.onclick=()=>{
+  const i=+b.dataset.edititem,it=items[i],q=prompt('Jumlah barang:',it.qty);if(q===null)return;
+  const p=prompt('Harga satuan (Rupiah):',it.price);if(p===null)return;
+  if(q.trim()===''||p.trim()===''||!Number.isFinite(+q)||+q<0||!Number.isFinite(+p)||+p<0){alert('Jumlah dan harga harus berupa angka nol atau lebih.');return}
+  items[i]={...it,qty:+q,price:+p,needsPrice:false};renderItems();
+ });
+ updatePayment();
+}
+function updatePayment(){
+ const t=total(), raw=$('cash').value, cash=raw===''?0:Number(raw);
+ $('payTotal').textContent=fmt(t);$('cashShown').textContent=fmt(cash);
+ const diff=cash-t;
+ if(raw===''){$('changeLabel').textContent='Uang kembalian';$('change').textContent=fmt(0);$('payNote').textContent='Masukkan uang masuk untuk menghitung kembalian.'}
+ else if(diff>=0){$('changeLabel').textContent='Uang kembalian';$('change').textContent=fmt(diff);$('payNote').textContent='Pembayaran mencukupi.'}
+ else{$('changeLabel').textContent='Uang masih kurang';$('change').textContent=fmt(-diff);$('payNote').textContent='Tambahkan uang sebesar nilai di atas agar pembayaran cukup.'}
+}
+$('cash').addEventListener('input',updatePayment);
+function parseLine(line){
+ line=line.trim();if(!line)return null;
+ const m=line.match(/^(.*?)\s*(?:x|×|,|=|\s)\s*(\d+(?:[.,]\d+)?)\s*$/i);
+ if(!m)return {name:line,qty:1};
+ return {name:m[1].trim().replace(/[,:=]+$/,''),qty:Number(m[2].replace(',','.'))};
+}
+$('process').onclick=()=>{
+ const lines=$('bulk').value.split(/\n/).map(parseLine).filter(Boolean);
+ if(!lines.length){status('Masukkan setidaknya satu barang.');return}
+ items=lines.map(({name,qty})=>{const key=norm(name),found=Object.keys(prices).find(k=>norm(k)===key);return{name,qty,price:found?Number(prices[found]):0,needsPrice:!found}});
+ renderItems();status('Daftar diproses. Periksa barang yang belum memiliki harga sebelum transaksi.');
+};
+$('savePrice').onclick=()=>{
+ const name=$('product').value.trim(),raw=$('price').value,price=Number(raw);
+ if(!name||raw===''||!Number.isFinite(price)||price<0){status('Isi nama barang dan harga yang valid.');return}
+ prices[norm(name)]=price;localStorage.setItem('agkb_prices',JSON.stringify(prices));
+ items=items.map(it=>norm(it.name)===norm(name)?{...it,price,needsPrice:false}:it);
+ renderPrices();renderItems();$('product').value='';$('price').value='';status('Harga tersimpan dan total diperbarui.');
+};
+function receipt(){
+ const cashRaw=$('cash').value,cash=cashRaw===''?null:Number(cashRaw),t=total(),diff=cash===null?null:cash-t;
+ return ['AG KARYANA — NOTA BELANJA',new Date().toLocaleString('id-ID'),'--------------------------------',...items.map((it,i)=>`${i+1}. ${it.name}\n   ${it.qty} x ${fmt(it.price)} = ${fmt(it.qty*it.price)}`),'--------------------------------',`TOTAL BELANJA: ${fmt(t)}`,`UANG MASUK: ${cash===null?'Belum diisi':fmt(cash)}`,cash===null?'KEMBALIAN: Belum dihitung':diff>=0?`KEMBALIAN: ${fmt(diff)}`:`UANG KURANG: ${fmt(-diff)}`].join('\n');
+}
+$('copy').onclick=async()=>{
+ if(!items.length){status('Belum ada barang untuk dibuat nota.');return}
+ const text=receipt();
+ try{await navigator.clipboard.writeText(text);status('Nota disalin. Buka WhatsApp lalu tempel pesan.')}
+ catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();status(ok?'Nota disalin. Buka WhatsApp lalu tempel pesan.':'Gagal menyalin. Coba gunakan browser lain.')}
+};
+$('saveTxn').onclick=()=>{
+ if(!items.length){status('Tidak ada transaksi untuk disimpan.');return}
+ if(items.some(it=>it.needsPrice)&&!confirm('Ada barang belum memiliki harga dan dihitung Rp0. Simpan tetap?'))return;
+ const cashRaw=$('cash').value,cash=cashRaw===''?null:Number(cashRaw),t=total();
+ history.unshift({date:new Date().toLocaleString('id-ID'),items:JSON.parse(JSON.stringify(items)),total:t,cash,change:cash===null?null:cash-t});
+ localStorage.setItem('agkb_history',JSON.stringify(history));renderHistory();status('Transaksi tersimpan di browser perangkat ini.');
+};
+function renderHistory(){
+ $('history').innerHTML=history.length?history.map((h,i)=>`<div class="item"><div class="itemtop"><span>${esc(h.date)}</span><span>${fmt(h.total)}</span></div><small>Uang masuk: ${h.cash===null?'Belum diisi':fmt(h.cash)} · ${h.change===null?'Kembalian belum dihitung':h.change>=0?'Kembalian: '+fmt(h.change):'Kurang: '+fmt(-h.change)}</small><div class="itemactions"><button class="secondary" data-load="${i}">Muat</button><button class="danger" data-delhist="${i}">Hapus riwayat</button></div></div>`).join(''):'<p class="hint">Belum ada riwayat transaksi.</p>';
+ $('history').querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{const h=history[+b.dataset.load];items=JSON.parse(JSON.stringify(h.items));$('cash').value=h.cash===null?'':h.cash;renderItems();status('Transaksi dimuat kembali.')});
+ $('history').querySelectorAll('[data-delhist]').forEach(b=>b.onclick=()=>{history.splice(+b.dataset.delhist,1);localStorage.setItem('agkb_history',JSON.stringify(history));renderHistory()});
+}
+$('historyBtn').onclick=()=>{$('historyCard').hidden=!$('historyCard').hidden;if(!$('historyCard').hidden)renderHistory()};
+$('clear').onclick=()=>{if(confirm('Mulai transaksi baru? Daftar saat ini akan dikosongkan.')){items=[];$('bulk').value='';$('cash').value='';renderItems();status('Transaksi baru siap. Daftar harga dan riwayat tetap tersimpan.')}};
+renderPrices();renderItems();renderHistory();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
